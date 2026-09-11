@@ -1,7 +1,3 @@
-
-### `about.md`
-
-```markdown
 # Bunny Hop
 
 Automatically make your player jump at a fixed interval while playing Geometry Dash.
