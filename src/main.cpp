@@ -1,17 +1,18 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/PlayLayer.hpp>
-#include <Geode/binding/PlayerObject.hpp>
+#include <Geode/modify/PlayerObject.hpp>
 
 using namespace geode::prelude;
 
 namespace bunny_hop {
-    constexpr float TEST_JUMP_VELOCITY = 10.0f;
+    constexpr double TEST_JUMP_VELOCITY = 10.0;
 }
 
 class $modify(BunnyHopPlayLayer, PlayLayer) {
 public:
     struct Fields {
         double elapsed = 0.0;
+        bool jumpPending = false;
     };
 
     void update(float dt) {
@@ -19,6 +20,7 @@ public:
 
         if (!Mod::get()->getSettingValue<bool>("enabled")) {
             m_fields->elapsed = 0.0;
+            m_fields->jumpPending = false;
             return;
         }
 
@@ -36,19 +38,45 @@ public:
             return;
 
         m_fields->elapsed = 0.0;
-
-        auto player = m_player1;
-
-        if (!player || player->m_isDead)
-            return;
-
-        // Use Geometry Dash's PlayerObject boost function rather than
-        // directly overwriting the vertical-velocity field.
-        player->boostPlayer(bunny_hop::TEST_JUMP_VELOCITY);
+        m_fields->jumpPending = true;
     }
 
     void resetLevel() {
         m_fields->elapsed = 0.0;
+        m_fields->jumpPending = false;
         PlayLayer::resetLevel();
+    }
+};
+
+class $modify(BunnyHopPlayerObject, PlayerObject) {
+public:
+    void update(float dt) {
+        PlayerObject::update(dt);
+
+        auto layer = PlayLayer::get();
+
+        if (!layer)
+            return;
+
+        if (layer->m_player1 != this)
+            return;
+
+        if (m_isDead)
+            return;
+
+        auto fields = static_cast<BunnyHopPlayLayer*>(layer)->m_fields.self();
+
+        if (!fields || !fields->jumpPending)
+            return;
+
+        fields->jumpPending = false;
+
+        const double velocity = m_isUpsideDown
+            ? -bunny_hop::TEST_JUMP_VELOCITY
+            : bunny_hop::TEST_JUMP_VELOCITY;
+
+        // Type 68 is the type used by Geode's official pushPlayer()
+        // implementation in the 2.2081 bindings.
+        setYVelocity(velocity, 68);
     }
 };
