@@ -12,36 +12,46 @@ class $modify(BunnyHopPlayLayer, PlayLayer) {
 public:
     struct Fields {
         double elapsed = 0.0;
+
+        // A hop is waiting for the player to become grounded.
         bool hopPending = false;
+
+        // Prevents another automatic hop after one has fired.
         bool hopLocked = false;
+
+        // Becomes true only after we have actually observed the
+        // player airborne after an automatic hop.
+        bool hasLeftGround = false;
     };
 
     void postUpdate(float dt) {
-        // Let Geometry Dash perform its normal update first.
+        // Always let Geometry Dash perform its normal update first.
         PlayLayer::postUpdate(dt);
 
         auto* player = m_player1;
 
-        // No player available.
         if (!player) {
             m_fields->elapsed = 0.0;
             m_fields->hopPending = false;
             m_fields->hopLocked = false;
+            m_fields->hasLeftGround = false;
             return;
         }
 
-        // If the mod is disabled, completely reset its internal state.
+        // Disabled = completely reset the mod state.
         if (!Mod::get()->getSettingValue<bool>("enabled")) {
             m_fields->elapsed = 0.0;
             m_fields->hopPending = false;
             m_fields->hopLocked = false;
+            m_fields->hasLeftGround = false;
             return;
         }
 
-        // Dead players should not receive a hop.
+        // Never interact with a dead player.
         if (player->m_isDead) {
             m_fields->hopPending = false;
             m_fields->hopLocked = false;
+            m_fields->hasLeftGround = false;
             return;
         }
 
@@ -54,12 +64,40 @@ public:
         );
 
         /*
-         * Advance the timer only while no hop is waiting.
-         *
-         * Once the interval is reached, we mark a hop as pending.
-         * The actual hop waits until the player is grounded.
+         * ------------------------------------------------------------
+         * 1. If an automatic hop has already happened, wait for a
+         *    complete airborne -> grounded cycle.
+         * ------------------------------------------------------------
          */
-        if (!m_fields->hopPending && !m_fields->hopLocked) {
+
+        if (m_fields->hopLocked) {
+            // First, we MUST observe the player actually leave
+            // the ground. This prevents the lock from being cleared
+            // immediately after applying the jump.
+            if (!player->m_isOnGround) {
+                m_fields->hasLeftGround = true;
+            }
+
+            // Only unlock after:
+            //   airborne was observed
+            //   AND
+            //   player has subsequently become grounded.
+            if (m_fields->hasLeftGround && player->m_isOnGround) {
+                m_fields->hopLocked = false;
+                m_fields->hasLeftGround = false;
+            }
+
+            // Never allow the timer to fire while locked.
+            return;
+        }
+
+        /*
+         * ------------------------------------------------------------
+         * 2. Build the interval timer.
+         * ------------------------------------------------------------
+         */
+
+        if (!m_fields->hopPending) {
             m_fields->elapsed += static_cast<double>(dt);
 
             if (m_fields->elapsed >= interval) {
@@ -68,51 +106,53 @@ public:
         }
 
         /*
-         * A hop has already happened.
+         * ------------------------------------------------------------
+         * 3. If the timer expired while airborne, wait.
          *
-         * Do absolutely nothing until Geometry Dash reports that
-         * the player has landed again.
+         *    IMPORTANT:
+         *    We do NOT modify velocity while airborne.
+         * ------------------------------------------------------------
          */
-        if (m_fields->hopLocked) {
-            if (player->m_isOnGround) {
-                m_fields->hopLocked = false;
-            }
 
+        if (m_fields->hopPending && !player->m_isOnGround) {
             return;
         }
 
         /*
-         * The timer expired while the player was airborne.
+         * ------------------------------------------------------------
+         * 4. Timer expired + player is genuinely grounded.
          *
-         * Keep the hop pending instead of firing it in mid-air.
+         *    Perform exactly ONE hop.
+         * ------------------------------------------------------------
          */
-        if (!m_fields->hopPending)
+
+        if (m_fields->hopPending && player->m_isOnGround) {
+            const double velocity = player->m_isUpsideDown
+                ? -bunny_hop::JUMP_VELOCITY
+                : JUMP_VELOCITY;
+
+            player->setYVelocity(velocity, 68);
+
+            // Reset the interval.
+            m_fields->elapsed = 0.0;
+
+            // Consume the pending hop.
+            m_fields->hopPending = false;
+
+            // Lock until an actual airborne -> grounded cycle
+            // has been observed.
+            m_fields->hopLocked = true;
+            m_fields->hasLeftGround = false;
+
             return;
-
-        if (!player->m_isOnGround)
-            return;
-
-        /*
-         * We are grounded and a hop is pending.
-         *
-         * Apply the upward velocity once, then lock the hop until
-         * the player lands again.
-         */
-        const double velocity = player->m_isUpsideDown
-            ? -bunny_hop::JUMP_VELOCITY
-            : bunny_hop::JUMP_VELOCITY;
-
-        player->setYVelocity(velocity, 68);
-
-        m_fields->elapsed = 0.0;
-        m_fields->hopPending = false;
-        m_fields->hopLocked = true;
+        }
     }
 
     void resetLevel() {
         m_fields->elapsed = 0.0;
         m_fields->hopPending = false;
         m_fields->hopLocked = false;
+        m_fields->hasLeftGround = false;
 
         PlayLayer::resetLevel();
     }
