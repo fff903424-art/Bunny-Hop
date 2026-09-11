@@ -5,7 +5,7 @@
 using namespace geode::prelude;
 
 namespace bunny_hop {
-    constexpr double DEFAULT_JUMP_VELOCITY = 10.0;
+    constexpr double JUMP_VELOCITY = 10.0;
 }
 
 class $modify(BunnyHopPlayLayer, PlayLayer) {
@@ -15,7 +15,6 @@ public:
     };
 
     void postUpdate(float dt) {
-        // Let Geometry Dash finish its normal frame first.
         PlayLayer::postUpdate(dt);
 
         if (!Mod::get()->getSettingValue<bool>("enabled")) {
@@ -34,7 +33,6 @@ public:
         if (m_fields->elapsed < interval)
             return;
 
-        // Keep excess time so the timer stays stable.
         m_fields->elapsed -= interval;
 
         auto* player = m_player1;
@@ -42,11 +40,14 @@ public:
         if (!player || player->m_isDead)
             return;
 
-        const double velocity = player->m_isUpsideDown
-            ? -bunny_hop::DEFAULT_JUMP_VELOCITY
-            : bunny_hop::DEFAULT_JUMP_VELOCITY;
+        // Don't repeatedly reset an already-active jump.
+        if (player->playerIsMovingUp())
+            return;
 
-        // Directly set the player's vertical velocity after normal physics.
+        const double velocity = player->m_isUpsideDown
+            ? -bunny_hop::JUMP_VELOCITY
+            : bunny_hop::JUMP_VELOCITY;
+
         player->setYVelocity(velocity, 68);
     }
 
