@@ -1,0 +1,34 @@
+{
+  "geode": "v5.10.1",
+  "gd": {
+    "android": "2.2081"
+  },
+  "id": "bunny.hop",
+  "name": "Bunny Hop",
+  "version": "v1.0.0",
+  "developer": "Bunny Hop",
+  "description": "Automatically boosts the active player upward at a fixed interval during gameplay.",
+  "settings": {
+    "enabled": {
+      "type": "bool",
+      "name": "Bunny Hop",
+      "description": "Automatically boost the player upward during gameplay.",
+      "default": true
+    },
+    "interval": {
+      "type": "float",
+      "name": "Jump Interval",
+      "description": "Time between automatic upward boosts, in seconds.",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 10.0,
+      "control": {
+        "arrows": true,
+        "arrow-step": 0.1,
+        "slider": true,
+        "slider-step": 0.1,
+        "input": true
+      }
+    }
+  }
+}
