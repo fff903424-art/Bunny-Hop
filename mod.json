@@ -11,7 +11,7 @@
   "version": "v1.0.0",
   "developer": "Pan5430",
   "description": "Automatically boosts the active player upward at a fixed interval during gameplay.",
-  "repository": "https://github.com/fff903424-art/Bunny-Hop",
+  "repository": "https://github.com/fff903424-art/bunny-hop",
   "settings": {
     "enabled": {
       "type": "bool",
