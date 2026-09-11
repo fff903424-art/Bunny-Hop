@@ -1,10 +1,11 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/PlayLayer.hpp>
+#include <Geode/binding/PlayerObject.hpp>
 
 using namespace geode::prelude;
 
 namespace bunny_hop {
-    constexpr float TEST_JUMP_VELOCITY = 10.0f;
+    constexpr double DEFAULT_JUMP_VELOCITY = 10.0;
 }
 
 class $modify(BunnyHopPlayLayer, PlayLayer) {
@@ -13,27 +14,27 @@ public:
         double elapsed = 0.0;
     };
 
-    void update(float dt) {
-        PlayLayer::update(dt);
+    void postUpdate(float dt) {
+        // Let Geometry Dash finish its normal frame first.
+        PlayLayer::postUpdate(dt);
 
         if (!Mod::get()->getSettingValue<bool>("enabled")) {
             m_fields->elapsed = 0.0;
             return;
         }
 
-        const double interval =
-            std::clamp(
-                Mod::get()->getSettingValue<double>("interval"),
-                0.1,
-                10.0
-            );
+        const double interval = std::clamp(
+            Mod::get()->getSettingValue<float>("interval"),
+            0.1f,
+            10.0f
+        );
 
         m_fields->elapsed += static_cast<double>(dt);
 
         if (m_fields->elapsed < interval)
             return;
 
-        // Keep the timer bounded and trigger exactly one hop for this frame.
+        // Keep excess time so the timer stays stable.
         m_fields->elapsed -= interval;
 
         auto* player = m_player1;
@@ -41,12 +42,12 @@ public:
         if (!player || player->m_isDead)
             return;
 
-        const float velocity =
-            player->m_isUpsideDown
-                ? -bunny_hop::TEST_JUMP_VELOCITY
-                : bunny_hop::TEST_JUMP_VELOCITY;
+        const double velocity = player->m_isUpsideDown
+            ? -bunny_hop::DEFAULT_JUMP_VELOCITY
+            : bunny_hop::DEFAULT_JUMP_VELOCITY;
 
-        player->pushPlayer(velocity);
+        // Directly set the player's vertical velocity after normal physics.
+        player->setYVelocity(velocity, 68);
     }
 
     void resetLevel() {
