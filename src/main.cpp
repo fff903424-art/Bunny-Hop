@@ -5,7 +5,7 @@
 using namespace geode::prelude;
 
 namespace bunny_hop {
-    constexpr double TEST_JUMP_VELOCITY = 10.0;
+    constexpr float TEST_JUMP_VELOCITY = 10.0f;
 }
 
 class $modify(BunnyHopPlayLayer, PlayLayer) {
@@ -23,27 +23,28 @@ public:
         }
 
         auto interval = Mod::get()->getSettingValue<double>("interval");
-        if (interval < 0.1) interval = 0.1;
-        if (interval > 10.0) interval = 10.0;
+
+        if (interval < 0.1)
+            interval = 0.1;
+
+        if (interval > 10.0)
+            interval = 10.0;
 
         m_fields->elapsed += static_cast<double>(dt);
 
-        if (m_fields->elapsed < interval) return;
+        if (m_fields->elapsed < interval)
+            return;
 
-        // Consume complete intervals so a long frame cannot create an
-        // unbounded timer value. The boost itself is applied once per update.
         m_fields->elapsed = 0.0;
 
         auto player = m_player1;
-        if (!player || player->m_isDead) return;
 
-        // This writes the game's actual PlayerObject vertical velocity rather
-        // than changing the level or simulating a jump through level objects.
-        // Positive Y is upward in GD's normal orientation; gravity reversal
-        // requires the opposite sign.
-        player->m_yVelocity = player->m_isUpsideDown
-            ? -bunny_hop::TEST_JUMP_VELOCITY
-            : bunny_hop::TEST_JUMP_VELOCITY;
+        if (!player || player->m_isDead)
+            return;
+
+        // Use Geometry Dash's PlayerObject boost function rather than
+        // directly overwriting the vertical-velocity field.
+        player->boostPlayer(bunny_hop::TEST_JUMP_VELOCITY);
     }
 
     void resetLevel() {
@@ -51,4 +52,3 @@ public:
         PlayLayer::resetLevel();
     }
 };
-
