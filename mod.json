@@ -1,12 +1,12 @@
 {
-  "geode": "v5.10.1",
+  "geode": "5.10.1",
   "gd": {
     "android": "2.2081"
   },
-  "id": "bunny.hop",
+  "id": "pan.bunny.hop",
   "name": "Bunny Hop",
   "version": "v1.0.0",
-  "developer": "Bunny Hop",
+  "developer": "Pan5430",
   "description": "Automatically boosts the active player upward at a fixed interval during gameplay.",
   "settings": {
     "enabled": {
