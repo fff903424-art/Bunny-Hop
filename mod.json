@@ -1,13 +1,17 @@
 {
   "geode": "5.10.1",
   "gd": {
-    "android": "2.2081"
+    "android": "2.2081",
+    "win": "2.2081",
+    "mac": "2.2081",
+    "ios": "2.2081"
   },
   "id": "pan.bunny.hop",
   "name": "Bunny Hop",
   "version": "v1.0.0",
   "developer": "Pan5430",
   "description": "Automatically boosts the active player upward at a fixed interval during gameplay.",
+  "repository": "https://github.com/fff903424-art/Bunny-Hop",
   "settings": {
     "enabled": {
       "type": "bool",
